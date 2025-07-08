@@ -5,5 +5,5 @@ feedparser
 beautifulsoup4
 altair
 spacy
-ntlk
+nltk
 streamlit
