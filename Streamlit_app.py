@@ -7,14 +7,13 @@ import psycopg2
 
 # Initialize Supabase connection
 @st.cache_resource
-@st.cache_resource
 def init_connection():
     return psycopg2.connect(
-        host=st.secrets["postgres"]["host"],
-        port=st.secrets["postgres"]["port"],
-        database=st.secrets["postgres"]["dbname"],
-        user=st.secrets["postgres"]["user"],
-        password=st.secrets["postgres"]["password"]
+        host=st.secrets["host"],
+        port=st.secrets["port"],
+        database=st.secrets["dbname"],
+        user=st.secrets["user"],
+        password=st.secrets["password"]
     )
 
 conn = init_connection()
