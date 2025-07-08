@@ -1,21 +1,27 @@
-# FeelyCrypto - Professional UI Streamlit App
-
 import streamlit as st
 import pandas as pd
 import altair as alt
-from datetime import datetime
 import psycopg2
+from datetime import datetime, timedelta
 
-# ----- CONFIG -----
+# --------- Styling ---------
 st.set_page_config("FeelyCrypto", layout="wide")
-st.markdown("""
+st.markdown(
+    """
     <style>
-    .big-font { font-size:30px !important; }
-    .section-header { margin-top: 2rem; margin-bottom: 1rem; font-weight: 700; font-size: 22px; }
+        .main {
+            max-width: 800px;
+            margin: auto;
+        }
+        .stRadio > div {
+            flex-direction: row;
+        }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-# ----- DB CONNECTION -----
+# --------- DB Connection ---------
 @st.cache_resource
 def init_connection():
     return psycopg2.connect(
@@ -25,6 +31,7 @@ def init_connection():
         user=st.secrets["user"],
         password=st.secrets["password"]
     )
+
 conn = init_connection()
 
 @st.cache_data(ttl=3600)
@@ -36,12 +43,9 @@ def load_data():
 
 price_df, fgi_df, news_df = load_data()
 
-# ----- HEADER -----
-st.markdown("<div class='big-font'>📊 FeelyCrypto</div>", unsafe_allow_html=True)
-st.caption("Real-time insights powered by crypto price action, sentiment, and fear & greed index")
-st.divider()
+# --------- Top Section: Metrics ---------
+st.title("📊 FeelyCrypto")
 
-# ----- METRICS -----
 latest_btc = price_df[price_df.coin_id == 1].sort_values("timestamp").iloc[-1]
 latest_eth = price_df[price_df.coin_id == 2].sort_values("timestamp").iloc[-1]
 latest_fgi = fgi_df.sort_values("timestamp").iloc[-1]
@@ -51,7 +55,9 @@ col1.metric("BTC", f"${latest_btc['close']:.2f}", f"{latest_btc['pct_change']}%"
 col2.metric("ETH", f"${latest_eth['close']:.2f}", f"{latest_eth['pct_change']}%")
 col3.metric("Fear & Greed", latest_fgi['classification'], int(latest_fgi['value']))
 
-# ----- RECOMMENDATION -----
+st.markdown("---")
+
+# --------- Recommendation Engine ---------
 sent_counts = news_df["sentiment"].value_counts()
 avg_sentiment = sent_counts.idxmax() if not sent_counts.empty else "neutral"
 fgi_val = latest_fgi["value"]
@@ -63,62 +69,64 @@ elif fgi_val > 75 and avg_sentiment == "positive":
 else:
     recommendation = "🟡 Wait for clearer signal"
 
-st.markdown("<div class='section-header'>Recommendation</div>", unsafe_allow_html=True)
+st.subheader("Recommendation")
 st.info(recommendation)
 
-# ----- FILTERS -----
-st.markdown("<div class='section-header'>Filters</div>", unsafe_allow_html=True)
-filter_col1, filter_col2 = st.columns([1, 2])
-selected_coin = filter_col1.radio("Coin", [1, 2], format_func=lambda x: "BTC" if x == 1 else "ETH", horizontal=True)
-range_option = filter_col2.selectbox("Time Range", ["30D", "90D", "180D", "MAX"])
+st.markdown("---")
 
-# ----- DATA FILTERING -----
+# --------- Filters ---------
+st.subheader("Price History")
+col1, col2 = st.columns([2, 3])
+with col1:
+    selected_coin = st.radio("Coin", [1, 2], format_func=lambda x: "BTC" if x == 1 else "ETH", horizontal=True)
+with col2:
+    time_range = st.radio("Time Range", ["30D", "90D", "180D", "Max"], horizontal=True)
+
+# --------- Time Filter ---------
+today = datetime.now()
+if time_range == "30D":
+    start_date = today - timedelta(days=30)
+elif time_range == "90D":
+    start_date = today - timedelta(days=90)
+elif time_range == "180D":
+    start_date = today - timedelta(days=180)
+else:
+    start_date = price_df["timestamp"].min()
+
+# --------- Price Chart ---------
 chart_df = price_df[price_df.coin_id == selected_coin].copy()
 chart_df["timestamp"] = pd.to_datetime(chart_df["timestamp"])
+chart_df = chart_df[chart_df["timestamp"] >= start_date]
 
-if range_option != "MAX":
-    days = int(range_option.replace("D", ""))
-    cutoff = chart_df["timestamp"].max() - pd.Timedelta(days=days)
-    chart_df = chart_df[chart_df["timestamp"] >= cutoff]
-    fgi_df = fgi_df[pd.to_datetime(fgi_df["timestamp"]) >= cutoff]
-
-# ----- PRICE CHART -----
-st.markdown("<div class='section-header'>Price History</div>", unsafe_allow_html=True)
 price_chart = alt.Chart(chart_df).mark_line().encode(
     x="timestamp:T",
     y="close:Q"
-).properties(width=900, height=300)
+).properties(width=1000, height=300)
 
 st.altair_chart(price_chart, use_container_width=True)
 
-# ----- FGI CHART -----
-st.markdown("<div class='section-header'>Fear & Greed Over Time</div>", unsafe_allow_html=True)
+# --------- FGI Chart ---------
+st.subheader("Fear & Greed Index")
+
 fgi_df["timestamp"] = pd.to_datetime(fgi_df["timestamp"])
-fgi_line = alt.Chart(fgi_df).mark_line().encode(
+fgi_filtered = fgi_df[fgi_df["timestamp"] >= start_date]
+
+fgi_chart = alt.Chart(fgi_filtered).mark_line(color="orange").encode(
     x="timestamp:T",
     y="value:Q"
-).properties(width=900, height=200)
+).properties(width=1000, height=200)
 
-st.altair_chart(fgi_line, use_container_width=True)
+st.altair_chart(fgi_chart, use_container_width=True)
 
-# ----- PIE CHART -----
-st.markdown("<div class='section-header'>News Sentiment Summary</div>", unsafe_allow_html=True)
-pie_df = pd.DataFrame({"sentiment": sent_counts.index, "count": sent_counts.values})
-pie = alt.Chart(pie_df).mark_arc().encode(
-    theta="count:Q",
-    color="sentiment:N",
-    tooltip=["sentiment", "count"]
-).properties(width=400, height=300)
+st.markdown("---")
 
-st.altair_chart(pie, use_container_width=False)
+# --------- News Feed ---------
+st.subheader("Recent News")
+st.markdown("**Legend**  🟢 Positive 🔴 Negative 🟡 Neutral")
 
-# ----- NEWS FEED -----
-st.markdown("<div class='section-header'>Recent News</div>", unsafe_allow_html=True)
 for _, row in news_df.iterrows():
-    label = f"{'🟢' if row['sentiment']=='positive' else '🔴' if row['sentiment']=='negative' else '🟡'} {row['title']} ({int(row['confidence']*100)}%)"
+    sentiment_icon = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}.get(row["sentiment"], "⚪")
+    label = f"{sentiment_icon} {row['title']} (Confidence: {row['confidence']:.2f})"
     with st.expander(label):
         st.write(row["content"])
 
-# ----- END -----
-st.divider()
-st.caption("FeelyCrypto © 2025")
