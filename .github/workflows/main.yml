@@ -17,17 +17,22 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.12.10"
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Download spaCy English model
-        run: python -m spacy download en_core_web_sm
-      - name: Download NLTK stopwords
-        run: |
+          pip install scikit-learn
           python -m nltk.downloader stopwords
+          python -m spacy download en_core_web_sm
+
           
       - name: Run ETL pipeline
         run: python main.py
