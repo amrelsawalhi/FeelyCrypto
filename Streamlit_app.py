@@ -63,11 +63,11 @@ avg_sentiment = sent_counts.idxmax() if not sent_counts.empty else "neutral"
 fgi_val = latest_fgi["value"]
 
 if fgi_val < 40 and avg_sentiment == "negative":
-    recommendation = "🟢 Good time to buy"
+    recommendation = "Market is fearful, consider BUYING"
 elif fgi_val > 75 and avg_sentiment == "positive":
-    recommendation = "🔴 Good time to sell"
+    recommendation = "Market is greedy, consider SELLING"
 else:
-    recommendation = "🟡 Wait for clearer signal"
+    recommendation = "Market is uncertain, WAIT for a clearer signal"
 
 st.subheader("Recommendation")
 st.info(recommendation)
@@ -121,8 +121,8 @@ st.altair_chart(fgi_chart, use_container_width=True)
 st.markdown("---")
 
 # --------- News Feed ---------
-st.subheader("Recent News")
-st.markdown("**Legend**  🟢 Positive 🔴 Negative 🟡 Neutral")
+st.subheader("Recent Crypto News")
+st.markdown("🟢 Positive 🔴 Negative 🟡 Neutral")
 
 for _, row in news_df.iterrows():
     sentiment_icon = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}.get(row["sentiment"], "⚪")
