@@ -5,7 +5,7 @@ import psycopg2
 from datetime import datetime, timedelta
 
 # --------- Styling ---------
-st.set_page_config("FeelyCrypto", layout="wide")
+st.set_page_config("FeelyCrypto", layout="centered")
 st.markdown(
     """
     <style>
