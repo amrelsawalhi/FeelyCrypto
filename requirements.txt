@@ -3,4 +3,3 @@ requests
 psycopg2-binary
 feedparser
 beautifulsoup4
-supabase

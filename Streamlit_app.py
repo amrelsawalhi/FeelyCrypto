@@ -31,9 +31,7 @@ def load_data():
     return df_price, df_fgi, df_news
 
 price_df, fgi_df, news_df = load_data()
-st.write("Columns in price_df:", price_df.columns.tolist())
-st.write("Unique coin_ids:", price_df['coin_id'].unique())
-st.write("Sample of price_df:", price_df.head())
+
 # Config
 st.set_page_config("FeelyCrypto", layout="wide")
 st.title("📊 FeelyCrypto Dashboard")
@@ -46,7 +44,7 @@ latest_fgi = fgi_df.sort_values("timestamp").iloc[-1]
 col1, col2, col3 = st.columns(3)
 col1.metric("BTC", f"${latest_btc['close']:.2f}", f"{latest_btc['pct_change']}%")
 col2.metric("ETH", f"${latest_eth['close']:.2f}", f"{latest_eth['pct_change']}%")
-col3.metric("Fear & Greed", latest_fgi['classification'], latest_fgi['value'])
+col3.metric("Fear & Greed", latest_fgi['classification'], int(latest_fgi['value']))
 
 # Recommendation Engine
 sent_counts = news_df["sentiment"].value_counts()
