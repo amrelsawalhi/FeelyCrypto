@@ -3,26 +3,38 @@ import pandas as pd
 import altair as alt
 from supabase import create_client
 from datetime import datetime
+import psycopg2
 
 # Initialize Supabase connection
 @st.cache_resource
+@st.cache_resource
 def init_connection():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
+    return psycopg2.connect(
+        host=st.secrets["postgres"]["host"],
+        port=st.secrets["postgres"]["port"],
+        database=st.secrets["postgres"]["dbname"],
+        user=st.secrets["postgres"]["user"],
+        password=st.secrets["postgres"]["password"]
+    )
 
-supabase = init_connection()
+conn = init_connection()
 
-# Load data from Supabase
 @st.cache_data(ttl=3600)
 def load_data():
-    prices = supabase.table("fact_price_with_change").select("*").execute().data
-    fgi = supabase.table("fact_fear_greed").select("*").execute().data
-    news = supabase.table("news_articles").select("*").order("published_at", desc=True).execute().data
-    return pd.DataFrame(prices), pd.DataFrame(fgi), pd.DataFrame(news)
+    price_query = "SELECT * FROM fact_price_with_change;"
+    fgi_query = "SELECT * FROM fact_fear_greed;"
+    news_query = "SELECT * FROM news_articles ORDER BY published_at DESC;"
+
+    df_price = pd.read_sql(price_query, conn)
+    df_fgi = pd.read_sql(fgi_query, conn)
+    df_news = pd.read_sql(news_query, conn)
+
+    return df_price, df_fgi, df_news
 
 price_df, fgi_df, news_df = load_data()
-
+st.write("Columns in price_df:", price_df.columns.tolist())
+st.write("Unique coin_ids:", price_df['coin_id'].unique())
+st.write("Sample of price_df:", price_df.head())
 # Config
 st.set_page_config("FeelyCrypto", layout="wide")
 st.title("📊 FeelyCrypto Dashboard")
