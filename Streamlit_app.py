@@ -45,6 +45,7 @@ price_df, fgi_df, news_df = load_data()
 
 # --------- Top Section: Metrics ---------
 st.title("📊 FeelyCrypto")
+st.markdown("Your daily dose of crypto market insights and recommendations")
 
 latest_btc = price_df[price_df.coin_id == 1].sort_values("timestamp").iloc[-1]
 latest_eth = price_df[price_df.coin_id == 2].sort_values("timestamp").iloc[-1]
