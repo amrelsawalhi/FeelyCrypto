@@ -81,7 +81,7 @@ col1, col2 = st.columns([2, 3])
 with col1:
     selected_coin = st.radio("Coin", [1, 2], format_func=lambda x: "BTC" if x == 1 else "ETH", horizontal=True)
 with col2:
-    time_range = st.radio("Time Range", ["30D", "90D", "180D", "Max"], horizontal=True, index=4)
+    time_range = st.radio("Time Range", ["30D", "90D", "180D", "Max"], horizontal=True, index=3)
 
 # --------- Time Filter ---------
 today = datetime.now()
